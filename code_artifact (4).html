@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二年级科学：神眼测量王·视线大挑战（第4页）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: radial-gradient(circle at top, #0c4a6e 0%, #090d16 100%);
+            user-select: none;
+            overflow-x: hidden;
+        }
+        .shake {
+            animation: shake 0.35s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        /* 炮弹发射轨迹动画 */
+        @keyframes shootUp {
+            0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -260px) scale(1.3); opacity: 0.2; }
+        }
+        .cannon-projectile {
+            animation: shootUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            pointer-events: none;
+        }
+        /* 传送带移动背景 */
+        .belt-track {
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(56, 189, 248, 0.12) 0px,
+                rgba(56, 189, 248, 0.12) 20px,
+                rgba(15, 23, 42, 0.4) 20px,
+                rgba(15, 23, 42, 0.4) 40px
+            );
+            background-size: 40px 100%;
+            animation: beltSlide 0.8s linear infinite;
+        }
+        @keyframes beltSlide {
+            from { background-position: 0 0; }
+            to { background-position: 40px 0; }
+        }
+        .eye-handle {
+            touch-action: none;
+            cursor: ns-resize;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-3 md:p-5 text-white">
+
+    <!-- 顶部状态栏 -->
+    <div id="hud" class="hidden w-full max-w-4xl bg-slate-900/95 border-2 border-sky-400/60 rounded-2xl p-3 md:p-4 mb-3 flex flex-wrap justify-between items-center shadow-xl">
+        <div class="flex items-center space-x-3">
+            <span id="phase-badge" class="bg-sky-400 text-slate-950 font-black px-3 py-1 rounded-full text-xs">第一阶段：神眼校准</span>
+            <h1 id="phase-title" class="font-black text-base md:text-xl text-sky-300">视线与刻度 / 弯月面平行</h1>
+        </div>
+
+        <div class="flex items-center space-x-3 md:space-x-5 mt-2 sm:mt-0">
+            <div class="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 text-center">
+                <div class="text-[10px] text-slate-400 font-bold">关卡进度</div>
+                <div id="progress-text" class="text-sm md:text-base font-black text-emerald-400">1 / 4</div>
+            </div>
+
+            <div class="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center space-x-1">
+                <span id="hearts-text" class="text-base md:text-lg tracking-wider">❤️❤️❤️❤️</span>
+            </div>
+
+            <div class="bg-slate-950 px-3.5 py-1.5 rounded-xl border border-amber-400/50 flex items-center space-x-1">
+                <span class="text-base">🏆</span>
+                <span id="score-text" class="text-xl md:text-2xl font-black text-amber-400">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主游戏舞台 -->
+    <div id="main-stage" class="w-full max-w-4xl bg-slate-900 rounded-3xl border-4 border-sky-500/50 shadow-2xl overflow-hidden relative">
+
+        <!-- 开始界面 -->
+        <div id="start-screen" class="p-6 md:p-10 text-center bg-gradient-to-b from-slate-900 via-sky-950/60 to-slate-950 flex flex-col items-center justify-center min-h-[560px]">
+            <div class="inline-block bg-sky-400/20 border border-sky-300 text-sky-300 font-bold px-4 py-1 rounded-full text-sm mb-3">
+                二年级科学 · 单元一（第4页：测量与应用数目）
+            </div>
+            <div class="text-6xl mb-3">👁️📏🧪🚀</div>
+            <h1 class="text-3xl md:text-5xl font-black text-white mb-3 tracking-wide">神眼测量王：视线大挑战</h1>
+            <p class="text-sky-100 text-sm md:text-base max-w-2xl mb-6 leading-relaxed">
+                单靠感官观察无法得到准确的测量结果！<br>
+                想成为神眼测量王，你必须连续通过 <span class="text-amber-300 font-bold">两大物理特训阶段</span>：
+            </p>
+
+            <!-- 两阶段介绍 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mb-7 text-left">
+                <div class="bg-sky-500/15 border-2 border-sky-400/50 rounded-2xl p-5">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="text-3xl">👁️</span>
+                        <span class="font-black text-sky-300 text-lg">第一阶段：神眼视线校准（4题）</span>
+                    </div>
+                    <p class="text-xs md:text-sm text-slate-200 leading-relaxed">
+                        上下拖动<b>“小眼睛瞄准器”</b>，让红色视线激光与<b>刻度</b>或<b>水的弯月面</b>完美水平对齐，再按下【锁定读数】！视线偏高或偏低都会报错哦！
+                    </p>
+                </div>
+
+                <div class="bg-amber-500/15 border-2 border-amber-400/50 rounded-2xl p-5">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="text-3xl">🚀</span>
+                        <span class="font-black text-amber-300 text-lg">第二阶段：单位炮台极速发射（10题）</span>
+                    </div>
+                    <p class="text-xs md:text-sm text-slate-200 leading-relaxed">
+                        传送带送来各种测量物体，在倒计时内发射正确的<b>测量单位炮弹</b>（<span class="text-amber-300 font-bold">m、cm、l、ml、kg、g、h、min、s</span>）击中目标！
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-300 hover:to-cyan-300 text-slate-950 font-black text-xl md:text-2xl px-12 py-4 rounded-full shadow-lg shadow-sky-500/30 transition">
+                启动神眼开始测量！👁️
+            </button>
+        </div>
+
+        <!-- ==================== 第一阶段：视线校准物理微调界面 ==================== -->
+        <div id="phase1-screen" class="hidden p-4 md:p-7 flex flex-col justify-between min-h-[560px]">
+            <div class="text-center mb-3">
+                <span id="p1-tool-badge" class="inline-block bg-sky-500/20 border border-sky-400 text-sky-300 font-bold px-3 py-1 rounded-full text-xs mb-1">
+                    测量工具：量筒（液体的体积）
+                </span>
+                <h2 id="p1-instruction" class="text-xl md:text-2xl font-black text-white">
+                    请上下拖动右侧【👁️ 小眼睛】，使视线与【水的弯月面】平行！
+                </h2>
+            </div>
+
+            <!-- 物理校准交互区 -->
+            <div class="bg-slate-950 border-2 border-slate-700 rounded-3xl p-4 md:p-6 my-auto relative overflow-hidden">
+                <div id="calibration-area" class="relative w-full h-[310px] flex items-center justify-center select-none">
+                    <!-- 左侧测量仪器 SVG（动态生成量筒或直尺） -->
+                    <div id="instrument-visual" class="w-full max-w-xl h-full flex items-center justify-center"></div>
+
+                    <!-- 贯穿全屏的红色激光视线虚线（跟随小眼睛上下移动） -->
+                    <div id="sight-laser" class="absolute left-4 right-4 border-t-4 border-dashed border-rose-500 pointer-events-none flex items-center justify-between" style="top: 60px;">
+                        <span id="live-reading-tag" class="bg-rose-600 text-white text-xs font-black px-2.5 py-1 rounded-lg shadow -mt-8">
+                            当前视线读数：--
+                        </span>
+                        <span class="bg-rose-600/90 text-white text-[11px] font-bold px-2 py-0.5 rounded -mt-7">
+                            视线水平线 ◀
+                        </span>
+                    </div>
+
+                    <!-- 可上下拖动的“小眼睛瞄准器”滑块 -->
+                    <div id="eye-slider" class="eye-handle absolute right-3 md:right-8 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black px-3.5 py-2.5 rounded-2xl shadow-xl border-2 border-white flex items-center space-x-2 z-20" style="top: 38px;">
+                        <span class="text-2xl md:text-3xl">👁️</span>
+                        <div class="text-left leading-tight">
+                            <div class="text-xs font-black">上下拖动我</div>
+                            <div class="text-[10px] opacity-80">对齐红色虚线</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 校准反馈浮层 -->
+                <div id="p1-feedback" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-30">
+                    <div id="p1-fb-icon" class="text-6xl mb-2">✅</div>
+                    <div id="p1-fb-title" class="text-2xl md:text-3xl font-black mb-2">校准成功！</div>
+                    <div id="p1-fb-desc" class="text-sm md:text-base text-slate-200 max-w-md">说明</div>
+                </div>
+            </div>
+
+            <!-- 底部微调按钮 + 锁定读数按钮 -->
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <button onclick="nudgeEye(-4)" class="bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 text-white font-black px-5 py-3.5 rounded-2xl text-base transition">
+                    ⬆️ 视线微调上移
+                </button>
+                <button onclick="nudgeEye(4)" class="bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 text-white font-black px-5 py-3.5 rounded-2xl text-base transition">
+                    ⬇️ 视线微调下移
+                </button>
+                <button onclick="lockReading()" class="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-slate-950 font-black text-lg md:text-xl px-9 py-3.5 rounded-2xl shadow-lg shadow-emerald-500/30 transition">
+                    🎯 锁定读数！
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== 第二阶段：单位炮台极速发射界面 ==================== -->
+        <div id="phase2-screen" class="hidden p-4 md:p-6 flex flex-col justify-between min-h-[560px]">
+            <!-- 顶部倒计时与连击条 -->
+            <div>
+                <div class="flex items-center justify-between text-xs md:text-sm font-black mb-1.5 px-1">
+                    <span class="text-amber-300">🚀 发射正确的【测量单位炮弹】击中传送带目标！</span>
+                    <span class="text-pink-400">连击：<span id="p2-combo">0</span> 🔥 | 剩余时间：<span id="p2-timer" class="text-lg text-amber-400">12.0s</span></span>
+                </div>
+                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700 mb-3">
+                    <div id="p2-timebar" class="bg-gradient-to-r from-sky-400 via-amber-400 to-red-500 h-full transition-all duration-100" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- 传送带射击战场 -->
+            <div class="relative bg-slate-950 border-2 border-slate-700 rounded-3xl h-[270px] flex flex-col justify-between overflow-hidden p-4">
+                <!-- 上方传送带与目标靶子 -->
+                <div class="belt-track w-full py-4 px-3 rounded-2xl border-2 border-sky-500/40 flex flex-col items-center justify-center relative z-10">
+                    <div id="target-category-hint" class="text-xs font-bold text-sky-300 bg-sky-950/90 px-3 py-0.5 rounded-full border border-sky-500/40 mb-2">
+                        测量类别提示
+                    </div>
+                    <div id="target-card" class="bg-white text-slate-950 px-6 py-3 rounded-2xl shadow-xl border-4 border-amber-400 flex items-center space-x-3 transition-transform">
+                        <span id="target-emoji" class="text-4xl md:text-5xl">🏃‍♂️</span>
+                        <div class="text-left">
+                            <div id="target-name" class="text-lg md:text-2xl font-black text-slate-900">100米竞跑的时间</div>
+                            <div id="target-sub" class="text-xs font-bold text-slate-500">请选出最适合的单位！</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 炮弹飞行动画容器 -->
+                <div id="projectile-layer" class="absolute inset-0 pointer-events-none z-20"></div>
+
+                <!-- 射击结果即时反馈 -->
+                <div id="p2-feedback" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-30">
+                    <div id="p2-fb-icon" class="text-5xl mb-1">💥</div>
+                    <div id="p2-fb-title" class="text-xl md:text-2xl font-black">命中目标！</div>
+                    <div id="p2-fb-desc" class="text-xs md:text-sm text-slate-200 mt-1">解析</div>
+                </div>
+
+                <!-- 底部发射炮台底座 -->
+                <div class="flex flex-col items-center justify-end z-10">
+                    <div class="w-14 h-8 bg-gradient-to-t from-sky-600 to-cyan-400 rounded-t-full border-2 border-white shadow-lg flex items-center justify-center text-slate-950 font-black text-xs">
+                        炮台
+                    </div>
+                    <div class="w-40 h-2.5 bg-slate-700 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- 底部 9 大测量单位炮弹按键（完整覆盖课本第4页所有单位） -->
+            <div class="mt-4">
+                <p class="text-center text-xs text-slate-400 font-bold mb-2">👇 点击下方【单位炮弹】开火（按物体特征选择最适合的单位）</p>
+                <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-2">
+                    <button onclick="fireUnit('m')" class="bg-emerald-500/20 hover:bg-emerald-500 border-2 border-emerald-400 text-emerald-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">m</span>
+                        <span class="text-[10px]">米(长度)</span>
+                    </button>
+                    <button onclick="fireUnit('cm')" class="bg-emerald-500/20 hover:bg-emerald-500 border-2 border-emerald-400 text-emerald-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">cm</span>
+                        <span class="text-[10px]">厘米(长度)</span>
+                    </button>
+                    <button onclick="fireUnit('l')" class="bg-sky-500/20 hover:bg-sky-500 border-2 border-sky-400 text-sky-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">l</span>
+                        <span class="text-[10px]">升(体积)</span>
+                    </button>
+                    <button onclick="fireUnit('ml')" class="bg-sky-500/20 hover:bg-sky-500 border-2 border-sky-400 text-sky-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">ml</span>
+                        <span class="text-[10px]">毫升(体积)</span>
+                    </button>
+                    <button onclick="fireUnit('kg')" class="bg-amber-500/20 hover:bg-amber-500 border-2 border-amber-400 text-amber-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">kg</span>
+                        <span class="text-[10px]">公斤(质量)</span>
+                    </button>
+                    <button onclick="fireUnit('g')" class="bg-amber-500/20 hover:bg-amber-500 border-2 border-amber-400 text-amber-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">g</span>
+                        <span class="text-[10px]">克(质量)</span>
+                    </button>
+                    <button onclick="fireUnit('h')" class="bg-purple-500/20 hover:bg-purple-500 border-2 border-purple-400 text-purple-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">h</span>
+                        <span class="text-[10px]">小时(时间)</span>
+                    </button>
+                    <button onclick="fireUnit('min')" class="bg-purple-500/20 hover:bg-purple-500 border-2 border-purple-400 text-purple-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">min</span>
+                        <span class="text-[10px]">分钟(时间)</span>
+                    </button>
+                    <button onclick="fireUnit('s')" class="bg-purple-500/20 hover:bg-purple-500 border-2 border-purple-400 text-purple-300 hover:text-slate-950 rounded-xl py-2.5 px-1 font-black transition flex flex-col items-center">
+                        <span class="text-lg">s</span>
+                        <span class="text-[10px]">秒(时间)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最终结算画面 -->
+        <div id="end-screen" class="hidden p-8 md:p-12 text-center bg-gradient-to-b from-slate-900 to-sky-950/70 flex flex-col items-center justify-center min-h-[560px]">
+            <div id="end-icon" class="text-7xl md:text-8xl mb-4">👑👁️</div>
+            <h2 id="end-title" class="text-3xl md:text-4xl font-black text-amber-400 mb-2">恭喜加冕：神眼测量王！</h2>
+            <p id="end-desc" class="text-sky-100 text-base max-w-lg mb-6">
+                你已经牢牢掌握了课本第4页的测量单位与“视线与刻度/弯月面平行”的秘诀！
+            </p>
+
+            <div class="bg-slate-950 border-2 border-sky-500/40 rounded-2xl p-6 mb-8 w-full max-w-md">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <div class="text-xs text-slate-400 font-bold">总积分</div>
+                        <div id="final-score" class="text-2xl md:text-3xl font-black text-amber-400">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 font-bold">第一阶段校准</div>
+                        <div id="final-p1" class="text-2xl md:text-3xl font-black text-sky-400">4 / 4</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 font-bold">第二阶段命中</div>
+                        <div id="final-p2" class="text-2xl md:text-3xl font-black text-emerald-400">10 / 10</div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-300 hover:to-cyan-300 text-slate-950 font-black text-xl px-10 py-4 rounded-full shadow-lg">
+                再次挑战神眼测量王 🔄
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // ==================== 第一阶段数据：视线校准题库（4题：2题量筒弯月面 + 2题直尺刻度） ====================
+        const phase1Challenges = [
+            {
+                type: "cylinder",
+                toolBadge: "测量工具：量筒（液体的体积 · ml）",
+                instruction: "拖动【👁️ 小眼睛】，使视线与【蓝色水的弯月面】平行！（目标：60 ml）",
+                targetValue: 60,
+                unit: "ml",
+                targetY: 145, // 对应量筒 60ml 弯月面最低点的 Y 坐标
+                explain: "读取量筒读数时，视线必须与水的弯月面（最低处）保持水平平行，准确读数为 60 ml！"
+            },
+            {
+                type: "ruler",
+                toolBadge: "测量工具：直尺（长度 · cm）",
+                instruction: "拖动【👁️ 小眼睛】，使视线与【绿色铅笔尖端的刻度】平行！（目标：8 cm）",
+                targetValue: 8,
+                unit: "cm",
+                targetY: 115, // 对应直尺 8cm 刻度线的 Y 坐标
+                objName: "绿色铅笔",
+                objColor: "#22c55e",
+                explain: "用尺子测量物体长度时，视线必须与刻度垂直/平行正对，准确读数为 8 cm！"
+            },
+            {
+                type: "cylinder",
+                toolBadge: "测量工具：量筒（液体的体积 · ml）",
+                instruction: "拖动【👁️ 小眼睛】，使视线与【蓝色水的弯月面】平行！（目标：40 ml）",
+                targetValue: 40,
+                unit: "ml",
+                targetY: 195, // 对应量筒 40ml 弯月面最低点的 Y 坐标
+                explain: "视线不能从高处俯视，也不能从低处仰视，必须与水的弯月面平行，准确读数为 40 ml！"
+            },
+            {
+                type: "ruler",
+                toolBadge: "测量工具：直尺（长度 · cm）",
+                instruction: "拖动【👁️ 小眼睛】，使视线与【黄色吸管顶端的刻度】平行！（目标：5 cm）",
+                targetValue: 5,
+                unit: "cm",
+                targetY: 190, // 对应直尺 5cm 刻度线的 Y 坐标
+                objName: "黄色吸管",
+                objColor: "#eab308",
+                explain: "太准了！眼神与刻度完全平行对齐，准确读数为 5 cm！"
+            }
+        ];
+
+        // ==================== 第二阶段数据：单位炮台极速发射题库（10题，覆盖课本第4页所有单位） ====================
+        const phase2Targets = [
+            {
+                emoji: "🏃‍♂️⏱️",
+                name: "100米竞跑的时间",
+                categoryHint: "测量：时间（短时间竞跑）",
+                unit: "s",
+                explain: "100米赛跑只需要十几秒，最适合用【秒 (s)】来测量！"
+            },
+            {
+                emoji: "🧃🥛",
+                name: "一盒小包装牛奶的体积",
+                categoryHint: "测量：液体的体积（小容量）",
+                unit: "ml",
+                explain: "一盒小牛奶通常约 200 毫升，使用【毫升 (ml)】！"
+            },
+            {
+                emoji: "👦⚖️",
+                name: "二年级学生的体重",
+                categoryHint: "测量：质量（较重物体）",
+                unit: "kg",
+                explain: "课本练习题中的安安（38公斤）、美心（20公斤），体重使用【公斤 (kg)】！"
+            },
+            {
+                emoji: "✏️📏",
+                name: "一支新铅笔的长度",
+                categoryHint: "测量：长度（较短物体）",
+                unit: "cm",
+                explain: "铅笔比较短，用直尺测量，单位是【厘米 (cm)】！"
+            },
+            {
+                emoji: "🪣💧",
+                name: "一大桶矿泉水的体积",
+                categoryHint: "测量：液体的体积（大容量）",
+                unit: "l",
+                explain: "大水桶装的水很多，使用【升 (l)】作为单位！"
+            },
+            {
+                emoji: "🧶🏠",
+                name: "客厅大地毯的长度",
+                categoryHint: "测量：长度（较长物体）",
+                unit: "m",
+                explain: "课本第6页连一连：地毯比较长，使用【米 (m)】来测量！"
+            },
+            {
+                emoji: "🍓⚖️",
+                name: "一颗小草莓的质量",
+                categoryHint: "测量：质量（很轻的物体）",
+                unit: "g",
+                explain: "一颗草莓很轻，使用【克 (g)】作为测量单位！"
+            },
+            {
+                emoji: "🪥⏰",
+                name: "每天早晚刷牙的时间",
+                categoryHint: "测量：时间（几分钟）",
+                unit: "min",
+                explain: "刷牙大约需要 2 到 3 分钟，使用【分钟 (min)】！"
+            },
+            {
+                emoji: "😴🌙",
+                name: "晚上睡觉的总时间",
+                categoryHint: "测量：时间（长时间）",
+                unit: "h",
+                explain: "小学生每天晚上睡觉约 8 到 9 个小时，使用【小时 (h)】！"
+            },
+            {
+                emoji: "🐘⚖️",
+                name: "一头成年大象的质量",
+                categoryHint: "测量：质量（非常重的动物）",
+                unit: "kg",
+                explain: "大象非常重，质量单位使用【公斤 (kg)】！"
+            }
+        ];
+
+        // 全局状态
+        let score = 0;
+        let hearts = 4;
+        let p1Index = 0;
+        let p1Solved = 0;
+        let eyeY = 60; // 当前小眼睛Y坐标 (范围 35 ~ 255)
+        let isDraggingEye = false;
+        let isLocked = false;
+
+        let p2Questions = [];
+        let p2Index = 0;
+        let p2Solved = 0;
+        let p2Combo = 0;
+        let p2Time = 12.0;
+        let p2TimerId = null;
+        let isGameOver = false;
+
+        // 初始化眼睛拖拽事件（同时支持鼠标与触摸屏）
+        const eyeSlider = document.getElementById('eye-slider');
+        const calArea = document.getElementById('calibration-area');
+
+        function updateEyePosition(clientY) {
+            if (isLocked) return;
+            const rect = calArea.getBoundingClientRect();
+            let relY = clientY - rect.top;
+            relY = Math.max(40, Math.min(255, relY));
+            eyeY = relY;
+            applyEyeVisual();
+        }
+
+        function nudgeEye(delta) {
+            if (isLocked) return;
+            eyeY = Math.max(40, Math.min(255, eyeY + delta));
+            applyEyeVisual();
+        }
+
+        function applyEyeVisual() {
+            const laser = document.getElementById('sight-laser');
+            const slider = document.getElementById('eye-slider');
+            laser.style.top = `${eyeY}px`;
+            slider.style.top = `${eyeY - 22}px`;
+
+            // 根据当前 Y 坐标实时计算并显示视线读数（故意在歪斜时产生视差误差！）
+            const ch = phase1Challenges[p1Index];
+            if (!ch) return;
+
+            if (ch.type === 'cylinder') {
+                // 量筒：y=95 对应 80ml, y=145 对应 60ml, y=195 对应 40ml, y=245 对应 20ml
+                const rawVal = 80 - ((eyeY - 95) / 50) * 20;
+                const displayVal = Math.max(0, Math.round(rawVal));
+                document.getElementById('live-reading-tag').innerText = `当前视线位置：${displayVal} ml`;
+            } else {
+                // 直尺：y=65 对应 10cm, y=115 对应 8cm, y=190 对应 5cm, y=240 对应 3cm
+                const rawVal = 10 - ((eyeY - 65) / 25);
+                const displayVal = Math.max(0, rawVal.toFixed(1));
+                document.getElementById('live-reading-tag').innerText = `当前视线位置：${displayVal} cm`;
+            }
+        }
+
+        eyeSlider.addEventListener('mousedown', (e) => { isDraggingEye = true; e.preventDefault(); });
+        window.addEventListener('mousemove', (e) => { if (isDraggingEye) updateEyePosition(e.clientY); });
+        window.addEventListener('mouseup', () => { isDraggingEye = false; });
+
+        eyeSlider.addEventListener('touchstart', (e) => { isDraggingEye = true; e.preventDefault(); }, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+            if (isDraggingEye && e.touches.length > 0) {
+                updateEyePosition(e.touches[0].clientY);
+            }
+        }, { passive: false });
+        window.addEventListener('touchend', () => { isDraggingEye = false; });
+
+        // 允许直接点击校准区域任意高度快速定位小眼睛
+        calArea.addEventListener('click', (e) => {
+            if (e.target.closest('#eye-slider')) return;
+            updateEyePosition(e.clientY);
+        });
+
+        // 键盘上下方向键微调小眼睛
+        window.addEventListener('keydown', (e) => {
+            if (isGameOver || isLocked) return;
+            if (!document.getElementById('phase1-screen').classList.contains('hidden')) {
+                if (e.key === 'ArrowUp') nudgeEye(-3);
+                if (e.key === 'ArrowDown') nudgeEye(3);
+                if (e.key === 'Enter' || e.key === ' ') lockReading();
+            }
+        });
+
+        function startGame() {
+            score = 0;
+            hearts = 4;
+            p1Index = 0;
+            p1Solved = 0;
+            p2Index = 0;
+            p2Solved = 0;
+            p2Combo = 0;
+            isLocked = false;
+            isGameOver = false;
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('phase2-screen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('phase1-screen').classList.remove('hidden');
+
+            loadPhase1Question();
+        }
+
+        function updateHUD() {
+            document.getElementById('score-text').innerText = score;
+            document.getElementById('hearts-text').innerText = '❤️'.repeat(Math.max(0, hearts)) + '🖤'.repeat(Math.max(0, 4 - hearts));
+        }
+
+        // ==================== 第一阶段逻辑 ====================
+        function loadPhase1Question() {
+            if (hearts <= 0) {
+                endGame();
+                return;
+            }
+            if (p1Index >= phase1Challenges.length) {
+                startPhase2();
+                return;
+            }
+
+            isLocked = false;
+            const ch = phase1Challenges[p1Index];
+
+            document.getElementById('phase-badge').innerText = "第一阶段：神眼校准";
+            document.getElementById('phase-badge').className = "bg-sky-400 text-slate-950 font-black px-3 py-1 rounded-full text-xs";
+            document.getElementById('phase-title').innerText = "视线与刻度 / 弯月面平行";
+            document.getElementById('progress-text').innerText = `${p1Index + 1} / ${phase1Challenges.length}`;
+
+            document.getElementById('p1-tool-badge').innerText = ch.toolBadge;
+            document.getElementById('p1-instruction').innerText = ch.instruction;
+            document.getElementById('p1-feedback').classList.add('hidden');
+
+            // 初始故意把小眼睛放在偏高的位置，让学生自己拖下来对齐
+            eyeY = ch.targetY > 140 ? 65 : 235;
+
+            const container = document.getElementById('instrument-visual');
+            if (ch.type === 'cylinder') {
+                // 绘制带蓝色弯月面的量筒 SVG
+                const waterTopY = ch.targetY;
+                container.innerHTML = `
+                    <svg viewBox="0 0 360 300" class="h-full w-auto">
+                        <!-- 量筒底座 -->
+                        <rect x="115" y="270" width="130" height="14" rx="5" fill="#64748b"/>
+                        <!-- 量筒玻璃主体 -->
+                        <rect x="140" y="35" width="80" height="235" rx="6" fill="#1e293b" stroke="#94a3b8" stroke-width="4"/>
+                        <!-- 蓝色液体与凹形弯月面 -->
+                        <path d="M 142 ${waterTopY - 7} Q 180 ${waterTopY + 5} 218 ${waterTopY - 7} L 218 268 L 142 268 Z" fill="#0284c7" opacity="0.85"/>
+                        <path d="M 142 ${waterTopY - 7} Q 180 ${waterTopY + 5} 218 ${waterTopY - 7}" fill="none" stroke="#38bdf8" stroke-width="3"/>
+                        <!-- 刻度线 -->
+                        <line x1="142" y1="95" x2="165" y2="95" stroke="#f8fafc" stroke-width="2.5"/><text x="172" y="100" fill="#cbd5e1" font-size="13" font-weight="bold">80 ml</text>
+                        <line x1="142" y1="145" x2="165" y2="145" stroke="#f8fafc" stroke-width="2.5"/><text x="172" y="150" fill="#cbd5e1" font-size="13" font-weight="bold">60 ml</text>
+                        <line x1="142" y1="195" x2="165" y2="195" stroke="#f8fafc" stroke-width="2.5"/><text x="172" y="200" fill="#cbd5e1" font-size="13" font-weight="bold">40 ml</text>
+                        <line x1="142" y1="245" x2="165" y2="245" stroke="#f8fafc" stroke-width="2.5"/><text x="172" y="250" fill="#cbd5e1" font-size="13" font-weight="bold">20 ml</text>
+                        <text x="180" y="22" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle">量筒 (ml)</text>
+                    </svg>
+                `;
+            } else {
+                // 绘制直尺 + 竖立被测物体 SVG (y=265 为 0cm 基准底线, 每 25px = 1cm)
+                const objTopY = ch.targetY;
+                container.innerHTML = `
+                    <svg viewBox="0 0 380 300" class="h-full w-auto">
+                        <!-- 桌面基准线 (0 cm) -->
+                        <line x1="60" y1="265" x2="310" y2="265" stroke="#94a3b8" stroke-width="4"/>
+                        <!-- 直尺主体 -->
+                        <rect x="115" y="45" width="65" height="220" rx="4" fill="#fde047" stroke="#ca8a04" stroke-width="3"/>
+                        <text x="147" y="34" fill="#fde047" font-size="13" font-weight="bold" text-anchor="middle">直尺 (cm)</text>
+                        <!-- 刻度线 (0 到 8 cm) -->
+                        <line x1="155" y1="265" x2="180" y2="265" stroke="#1e293b" stroke-width="2.5"/><text x="125" y="269" fill="#1e293b" font-size="12" font-weight="bold">0</text>
+                        <line x1="162" y1="240" x2="180" y2="240" stroke="#1e293b" stroke-width="2"/>
+                        <line x1="155" y1="215" x2="180" y2="215" stroke="#1e293b" stroke-width="2.5"/><text x="125" y="219" fill="#1e293b" font-size="12" font-weight="bold">2</text>
+                        <line x1="162" y1="190" x2="180" y2="190" stroke="#1e293b" stroke-width="2"/><text x="125" y="194" fill="#1e293b" font-size="12" font-weight="bold">3</text>
+                        <line x1="155" y1="165" x2="180" y2="165" stroke="#1e293b" stroke-width="2.5"/><text x="125" y="169" fill="#1e293b" font-size="12" font-weight="bold">4</text>
+                        <line x1="162" y1="140" x2="180" y2="140" stroke="#1e293b" stroke-width="2"/>
+                        <line x1="155" y1="115" x2="180" y2="115" stroke="#1e293b" stroke-width="2.5"/><text x="125" y="119" fill="#1e293b" font-size="12" font-weight="bold">6</text>
+                        <line x1="162" y1="90" x2="180" y2="90" stroke="#1e293b" stroke-width="2"/>
+                        <line x1="155" y1="65" x2="180" y2="65" stroke="#1e293b" stroke-width="2.5"/><text x="125" y="69" fill="#1e293b" font-size="12" font-weight="bold">8</text>
+                        <!-- 被测物体 -->
+                        <rect x="195" y="${objTopY}" width="26" height="${265 - objTopY}" rx="4" fill="${ch.objColor}" stroke="#ffffff" stroke-width="2"/>
+                        <text x="208" y="${objTopY - 10}" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">${ch.objName}</text>
+                    </svg>
+                `;
+                // 修正直尺 8cm 和 5cm 的精确刻度标签位置
+                if (ch.targetValue === 8) {
+                    container.querySelector('svg').innerHTML += `<text x="125" y="119" fill="#dc2626" font-size="13" font-weight="bold">8cm</text>`;
+                } else {
+                    container.querySelector('svg').innerHTML += `<text x="125" y="194" fill="#dc2626" font-size="13" font-weight="bold">5cm</text>`;
+                }
+            }
+
+            applyEyeVisual();
+            updateHUD();
+        }
+
+        function lockReading() {
+            if (isLocked || isGameOver) return;
+            const ch = phase1Challenges[p1Index];
+            const diff = Math.abs(eyeY - ch.targetY);
+
+            const fb = document.getElementById('p1-feedback');
+            if (diff <= 11) {
+                // 视线与刻度/弯月面平行，锁定成功！
+                isLocked = true;
+                score += 150;
+                p1Solved++;
+                updateHUD();
+
+                document.getElementById('p1-fb-icon').innerText = '🎯✅';
+                document.getElementById('p1-fb-title').innerText = `神眼校准成功！准确读数：${ch.targetValue} ${ch.unit}`;
+                document.getElementById('p1-fb-title').className = "text-2xl md:text-3xl font-black mb-2 text-emerald-400";
+                document.getElementById('p1-fb-desc').innerText = ch.explain;
+                fb.classList.remove('hidden');
+
+                setTimeout(() => {
+                    p1Index++;
+                    loadPhase1Question();
+                }, 1850);
+            } else {
+                // 视线歪了！
+                hearts--;
+                updateHUD();
+                const stage = document.getElementById('main-stage');
+                stage.classList.add('shake');
+                setTimeout(() => stage.classList.remove('shake'), 350);
+
+                const directionHint = eyeY < ch.targetY ? "你的视线偏高（俯视）啦！请把小眼睛往下拖一点！" : "你的视线偏低（仰视）啦！请把小眼睛往上拖一点！";
+                document.getElementById('p1-fb-icon').innerText = '👁️❌';
+                document.getElementById('p1-fb-title').innerText = '视线没有平行，读数不准确！';
+                document.getElementById('p1-fb-title').className = "text-2xl md:text-3xl font-black mb-2 text-rose-400";
+                document.getElementById('p1-fb-desc').innerText = directionHint;
+                fb.classList.remove('hidden');
+
+                setTimeout(() => {
+                    fb.classList.add('hidden');
+                    if (hearts <= 0) endGame();
+                }, 1400);
+            }
+        }
+
+        // ==================== 第二阶段逻辑：单位炮台极速发射 ====================
+        function startPhase2() {
+            document.getElementById('phase1-screen').classList.add('hidden');
+            document.getElementById('phase2-screen').classList.remove('hidden');
+
+            document.getElementById('phase-badge').innerText = "第二阶段：单位炮台";
+            document.getElementById('phase-badge').className = "bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-full text-xs";
+            document.getElementById('phase-title').innerText = "发射正确的测量单位炮弹";
+
+            p2Questions = [...phase2Targets].sort(() => Math.random() - 0.5);
+            p2Index = 0;
+            p2Solved = 0;
+            p2Combo = 0;
+            loadPhase2Target();
+        }
+
+        function loadPhase2Target() {
+            if (hearts <= 0 || p2Index >= p2Questions.length) {
+                endGame();
+                return;
+            }
+
+            isLocked = false;
+            p2Time = 12.0;
+            const target = p2Questions[p2Index];
+
+            document.getElementById('progress-text').innerText = `${p2Index + 1} / ${p2Questions.length}`;
+            document.getElementById('p2-combo').innerText = p2Combo;
+            document.getElementById('p2-feedback').classList.add('hidden');
+
+            document.getElementById('target-category-hint').innerText = target.categoryHint;
+            document.getElementById('target-emoji').innerText = target.emoji;
+            document.getElementById('target-name').innerText = target.name;
+            document.getElementById('target-sub').innerText = "请点击下方对应的单位开炮！";
+
+            updateHUD();
+            clearInterval(p2TimerId);
+            p2TimerId = setInterval(() => {
+                if (isLocked || isGameOver) return;
+                p2Time = Math.max(0, p2Time - 0.1);
+                document.getElementById('p2-timer').innerText = p2Time.toFixed(1) + 's';
+                document.getElementById('p2-timebar').style.width = `${(p2Time / 12.0) * 100}%`;
+
+                if (p2Time <= 0) {
+                    clearInterval(p2TimerId);
+                    handleP2Miss("⏰ 倒计时结束！目标溜走啦！");
+                }
+            }, 100);
+        }
+
+        function fireUnit(chosenUnit) {
+            if (isLocked || isGameOver) return;
+            isLocked = true;
+            clearInterval(p2TimerId);
+
+            // 发射炮弹视觉特效
+            const proj = document.createElement('div');
+            proj.className = "cannon-projectile absolute bottom-10 left-1/2 bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-full border-2 border-white shadow-lg text-lg";
+            proj.innerText = `🚀 ${chosenUnit}`;
+            document.getElementById('projectile-layer').appendChild(proj);
+            setTimeout(() => proj.remove(), 300);
+
+            const target = p2Questions[p2Index];
+            const fb = document.getElementById('p2-feedback');
+
+            setTimeout(() => {
+                if (chosenUnit === target.unit) {
+                    p2Combo++;
+                    p2Solved++;
+                    const gained = 100 + p2Combo * 15;
+                    score += gained;
+                    updateHUD();
+
+                    document.getElementById('p2-fb-icon').innerText = '💥🎯';
+                    document.getElementById('p2-fb-title').innerText = `精准命中【${target.unit}】！+${gained} 分`;
+                    document.getElementById('p2-fb-title').className = "text-xl md:text-2xl font-black text-emerald-400";
+                    document.getElementById('p2-fb-desc').innerText = target.explain;
+                    fb.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        p2Index++;
+                        loadPhase2Target();
+                    }, 1600);
+                } else {
+                    handleP2Miss(`❌ 炮弹偏离！正确答案是【${target.unit}】`);
+                }
+            }, 220);
+        }
+
+        function handleP2Miss(titleText) {
+            isLocked = true;
+            p2Combo = 0;
+            hearts--;
+            updateHUD();
+
+            const stage = document.getElementById('main-stage');
+            stage.classList.add('shake');
+            setTimeout(() => stage.classList.remove('shake'), 350);
+
+            const target = p2Questions[p2Index];
+            const fb = document.getElementById('p2-feedback');
+            document.getElementById('p2-fb-icon').innerText = '💥💨';
+            document.getElementById('p2-fb-title').innerText = titleText;
+            document.getElementById('p2-fb-title').className = "text-xl md:text-2xl font-black text-rose-400";
+            document.getElementById('p2-fb-desc').innerText = target.explain;
+            fb.classList.remove('hidden');
+
+            setTimeout(() => {
+                p2Index++;
+                loadPhase2Target();
+            }, 1750);
+        }
+
+        function endGame() {
+            isGameOver = true;
+            clearInterval(p2TimerId);
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('phase1-screen').classList.add('hidden');
+            document.getElementById('phase2-screen').classList.add('hidden');
+
+            const isChampion = hearts > 0 && p2Solved >= 7;
+            document.getElementById('end-icon').innerText = isChampion ? '👑👁️' : '📏💪';
+            document.getElementById('end-title').innerText = isChampion
+                ? '恭喜加冕：神眼测量王！'
+                : '测量特训结束！再来校准一次！';
+            document.getElementById('end-desc').innerText = '牢记课本第4页口诀：选对工具和单位，读取读数时视线与刻度/弯月面平行！';
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-p1').innerText = `${p1Solved} / ${phase1Challenges.length}`;
+            document.getElementById('final-p2').innerText = `${p2Solved} / ${phase2Targets.length}`;
+
+            document.getElementById('end-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
